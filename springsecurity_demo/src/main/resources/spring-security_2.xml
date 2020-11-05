@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:security="http://www.springframework.org/schema/security"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd http://www.springframework.org/schema/security http://www.springframework.org/schema/security/spring-security.xsd">
+<!--【注意】： 所有的路径url 必须以/打头，否则 启动报错-->
+
+<!--  静态资源过滤, 不需要登陆就可以访问
+  security: none放行
+  -->
+    <security:http pattern="/login.html" security="none"/>
+    <security:http pattern="/fail.html" security="none"/>
+
+<!--  拦截规则
+  auto-config: 自动配置，处理登陆，退出，生成登陆页面....
+  use-expressions: true access的属性值只能是hasRole,has.... 表达式
+                        access 只能是以ROLE_（大写）打头的字符串
+  -->
+    <security:http auto-config="true" use-expressions="false">
+        <!--intercept-url: 拦截url
+            pattern: url 匹配的格式
+            access="ROLE_ADMIN
+            要访问我的页面，就得先登陆，且登陆的用户的ROLE_ADMIN的角色才可以访问
+        -->
+        <security:intercept-url pattern="/**" access="ROLE_ADMIN"></security:intercept-url>
+    <!--  指定登陆页面
+      login-processing-url: 处理登陆请求, el-upload action="/setmeal/upload.do"
+       要做登陆，就得请求login-processing-url的路径
+       login-page: 登陆页面，如果用户没登陆，则会跳转到这个页面
+       default-target-url: 默认登陆成功时跳转的页面 假设是由a.html跳转到登陆页面，登陆成功则会跳加a.html
+       username-parameter: 登陆提交时使用的参数名，用户名的参数名,request.getParameter
+       password-parameter: 登陆提交时使用的参数名，密码的参数名
+       authentication-failure-url: 登陆失败时跳转
+       always-use-default-target: true: 不管是由哪个页面跳转到login.html，登陆成功后都会跳转到default-target-url，后台管理系统，面向互联用户的则不需要这个设置
+      -->
+        <security:form-login
+                login-page="/login.html"
+                login-processing-url="/login"
+                username-parameter="abc"
+                password-parameter="bbb"
+                default-target-url="/index.jsp"
+                authentication-failure-url="/fail.html"
+                always-use-default-target="false"
+        />
+        <!--关闭跨域访问限制-->
+        <security:csrf disabled="true"/>
+    </security:http>
+<!--  认证管理器  -->
+    <security:authentication-manager>
+        <!--提供认证用户的信息, 登陆用户使用的用户名及密码,用户所拥有的权限集合
+            user-service-ref 认证用户的信息找spring容器中一个叫userService的对象来获取
+            这个bean对象必须实现UserDetailsService接口
+        -->
+        <security:authentication-provider user-service-ref="userService" >
+        </security:authentication-provider>
+    </security:authentication-manager>
+
+    <!--自定义的从数据库获取登陆用户信息-->
+    <bean id="userService" class="com.itheima.service.UserService"/>
+
+    <!--定义使用的加密器，做密码校验-->
+    <bean id="encoder" class="org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder"/>
+</beans>
